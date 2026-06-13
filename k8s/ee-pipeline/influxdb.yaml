@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: influxdb-v3
+  namespace: telemetry
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: influxdb
+  template:
+    metadata:
+      labels:
+        app: influxdb
+    spec:
+      # SRE FIX: Enforce Principle of Least Privilege
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: influxdb
+          image: influxdb:latest # Leveraging the modern IOx Parquet engine
+          ports:
+            - containerPort: 8086
+          env:
+            - name: DOCKER_INFLUXDB_INIT_MODE
+              value: setup
+            - name: DOCKER_INFLUXDB_INIT_USERNAME
+              value: "gridops-admin"
+            - name: DOCKER_INFLUXDB_INIT_PASSWORD
+              value: "SovereignSREPass123!" # We will rotate this via External Secrets Operator later
+            - name: DOCKER_INFLUXDB_INIT_ORG
+              value: "gridops"
+            - name: DOCKER_INFLUXDB_INIT_BUCKET
+              value: "electrical_telemetry"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            limits:
+              cpu: "1000m"
+              memory: "2Gi"
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: influxdb-svc
+  namespace: telemetry
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8086
+      targetPort: 8086
+  selector:
+    app: influxdb

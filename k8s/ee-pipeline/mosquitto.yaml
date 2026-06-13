@@ -1,0 +1,68 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mosquitto-config
+  namespace: telemetry
+data:
+  mosquitto.conf: |
+    listener 1883
+    allow_anonymous true
+    # SRE FIX: Tune queues to handle high-frequency ESP32 sensor churn
+    max_inflight_messages 2048
+    max_queued_messages 10000
+    # SRE FIX: Disable persistence to prevent disk I/O bottlenecks during storms
+    persistence false
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mqtt-broker
+  namespace: telemetry
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mosquitto
+  template:
+    metadata:
+      labels:
+        app: mosquitto
+    spec:
+      # SRE FIX: Enforce Principle of Least Privilege
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1883
+        fsGroup: 1883
+      containers:
+        - name: mosquitto
+          image: eclipse-mosquitto:2
+          ports:
+            - containerPort: 1883
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: config-volume
+              mountPath: /mosquitto/config/mosquitto.conf
+              subPath: mosquitto.conf
+              readOnly: true
+      volumes:
+        - name: config-volume
+          configMap:
+            name: mosquitto-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mqtt-broker-svc
+  namespace: telemetry
+spec:
+  type: ClusterIP
+  ports:
+    - port: 1883
+      targetPort: 1883
+  selector:
+    app: mosquitto
