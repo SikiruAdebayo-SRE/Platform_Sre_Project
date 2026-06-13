@@ -1,0 +1,65 @@
+kind: playground
+title: GridOps Sovereign AI-EE Hybrid Sandbox
+categories:
+  - kubernetes
+  - networking
+playground:
+  machines:
+    # ---------------------------------------------------------
+    # MACHINE 1: The Industrial Edge & Control Plane
+    # ---------------------------------------------------------
+    - name: edge-cluster
+      cpuCount: 4
+      ramSize: "8Gi"
+      users:
+        - name: root
+          default: true
+      drives:
+        - source: ubuntu-24-04
+          mount: /
+        - size: 20GiB
+          mount: /var/lib/docker
+
+    # ---------------------------------------------------------
+    # MACHINE 2: The Multi-Cloud Emulator (AWS & Azure)
+    # ---------------------------------------------------------
+    - name: cloud-emulator
+      cpuCount: 2
+      ramSize: "4Gi"
+      users:
+        - name: root
+          default: true
+      drives:
+        - source: ubuntu-24-04
+          mount: /
+        - size: 10GiB
+          mount: /var/lib/docker
+
+  # ==========================================================
+  # DECLARATIVE TASK ENGINE: Asynchronous Helper Deployment
+  # ==========================================================
+  tasks:
+    - name: bootstrap-multi-cloud-emulators
+      type: helper
+      machine: cloud-emulator
+      user: root
+      run: |
+        # 1. Install Docker runtime asynchronously
+        apt-get update && apt-get install -y docker.io
+        systemctl enable --now docker
+        
+        # 2. Wait securely for the Docker socket
+        while [ ! -e /var/run/docker.sock ]; do sleep 1; done
+        
+        # 3. Deploy the AWS Emulator (Port 4566)
+        docker run -d --name floci-aws -p 4566:4566 \
+          -v /var/run/docker.sock:/var/run/docker.sock \
+          floci/floci:latest
+          
+        # 4. Deploy the Azure Emulator (Port 4577)
+        docker run -d --name floci-azure -p 4577:4577 \
+          -v /var/run/docker.sock:/var/run/docker.sock \
+          floci/floci-az:latest
+          
+        # Keep the helper task alive
+        tail -f /dev/null
