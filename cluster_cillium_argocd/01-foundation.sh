@@ -17,7 +17,11 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--flannel-backend=none --disabl
 echo "export KUBECONFIG=${KUBECONFIG}" >> ~/.bashrc
 sleep 15 
 
-echo "🕸️ [PHASE 1.3] Injecting Cilium eBPF Mesh..."
+echo "🌉 [PHASE 1.3] Installing Kubernetes Gateway API CRDs..."
+kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.0.0/standard-install.yaml
+sleep 5
+
+echo "🕸️ [PHASE 1.4] Injecting Cilium eBPF Mesh (Gateway Controller Enabled)..."
 cd /tmp
 curl -L --remote-name-all https://github.com/cilium/cilium-cli/releases/latest/download/cilium-linux-amd64.tar.gz
 tar xzvfC cilium-linux-amd64.tar.gz /usr/local/bin
@@ -26,10 +30,11 @@ rm cilium-linux-amd64.tar.gz
 cilium install \
   --set l7Policy.enabled=true \
   --set policyAuditMode=false \
-  --set policyEnforcementMode=default
+  --set policyEnforcementMode=default \
+  --set gatewayAPI.enabled=true
 cilium status --wait
 
-echo "🔧 [PHASE 1.4] Enforcing MTU 1400 and DNS Stability..."
+echo "🔧 [PHASE 1.5] Enforcing MTU 1400 and DNS Stability..."
 kubectl patch configmap cilium-config -n kube-system --type merge -p '{"data":{"mtu":"'"${CILIUM_MTU}"'"}}'
 kubectl rollout restart ds cilium -n kube-system
 kubectl rollout status ds cilium -n kube-system --timeout=120s

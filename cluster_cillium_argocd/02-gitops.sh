@@ -14,11 +14,15 @@ echo "🛡️ [PHASE 2.2] Deploying Argo CD..."
 kubectl create namespace ${ARGOCD_NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
 kubectl apply -n ${ARGOCD_NAMESPACE} --server-side --force-conflicts -f "${ARGOCD_MANIFEST_FILE}"
 
+echo "⚙️ [PHASE 2.3] Patching Argo CD for Gateway API HTTP Routing..."
+kubectl patch configmap argocd-cmd-params-cm -n ${ARGOCD_NAMESPACE} --type merge -p '{"data":{"server.insecure":"true"}}'
+kubectl patch deployment argocd-server -n ${ARGOCD_NAMESPACE} --type=json -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value": "--insecure"}]'
+
 echo "⏳ Waiting for Argo CD pods to initialize..."
 kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=argocd-server -n ${ARGOCD_NAMESPACE} --timeout=300s
 kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=argocd-application-controller -n ${ARGOCD_NAMESPACE} --timeout=300s
 
-echo "🔒 [PHASE 2.3] Applying eBPF Least Privilege Network Policies..."
+echo "🔒 [PHASE 2.4] Applying eBPF Least Privilege Network Policies..."
 cat << 'EOF' | kubectl apply -f -
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
@@ -93,6 +97,51 @@ spec:
   - fromEndpoints:
     - matchLabels:
         "k8s:io.kubernetes.pod.namespace": argocd
+EOF
+
+echo "🌐 [PHASE 2.5] Provisioning Cilium Gateway API & HTTPRoute..."
+cat << 'EOF' | kubectl apply -f -
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: cilium
+spec:
+  controllerName: io.cilium/gateway-controller
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: main-gateway
+  namespace: kube-system
+spec:
+  gatewayClassName: cilium
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 80
+    allowedRoutes:
+      namespaces:
+        from: All
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: argocd-server-route
+  namespace: argocd
+spec:
+  parentRefs:
+  - name: main-gateway
+    namespace: kube-system
+  hostnames:
+  - "argocd-iximiuz.sikiru.co.uk"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: argocd-server
+      port: 80
 EOF
 
 echo "✅ Extracting initial Argo CD Admin Password:"
