@@ -13,7 +13,7 @@ spec:
         # This references the second source for values
         valueFiles:
           - $values/k8s/keycloak/values.yaml
-    - repoURL: https://github.com/JimohAdebayo-DevOps/sre-self-healing-k8s.git
+    - repoURL: https://github.com/SikiruAdebayo-SRE/Platform_Sre_Project.git
       targetRevision: main
       ref: values # This 'ref' matches the '$values' variable above
   destination:

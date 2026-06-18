@@ -13,7 +13,7 @@ spec:
         # The '$values' variable points to the second source below
         valueFiles:
           - $values/k8s/n8n/postgres-values.yaml 
-    - repoURL: https://github.com/JimohAdebayo-DevOps/sre-self-healing-k8s.git
+    - repoURL: https://github.com/SikiruAdebayo-SRE/Platform_Sre_Project.git
       targetRevision: main
       ref: values  # This creates the '$values' alias used above
   destination:

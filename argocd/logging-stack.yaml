@@ -18,7 +18,7 @@ spec:
     - repoURL: 'https://grafana.github.io/helm-charts'
       chart: loki-stack
       targetRevision: 2.10.x
-    - repoURL: 'https://github.com/YOUR_USERNAME/sre-self-healing-k8s.git'
+    - repoURL: 'https://github.com/SikiruAdebayo-SRE/Platform_Sre_Project.git'
       targetRevision: main
       ref: values
   destination:
