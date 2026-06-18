@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: logging-stack
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1" # Logging must boot early to catch startup errors
+spec:
+  project: default
+  source:
+    repoURL: 'https://grafana.github.io/helm-charts'
+    chart: loki-stack
+    targetRevision: 2.10.x
+    helm:
+      valueFiles:
+        - $values/k8s/logging/values.yaml
+  sources:
+    - repoURL: 'https://grafana.github.io/helm-charts'
+      chart: loki-stack
+      targetRevision: 2.10.x
+    - repoURL: 'https://github.com/YOUR_USERNAME/sre-self-healing-k8s.git'
+      targetRevision: main
+      ref: values
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: logging
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

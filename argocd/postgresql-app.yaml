@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: postgresql-db
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - repoURL: https://charts.bitnami.com/bitnami
+      chart: postgresql
+      targetRevision: 18.2.0
+      helm:
+        # The '$values' variable points to the second source below
+        valueFiles:
+          - $values/k8s/n8n/postgres-values.yaml 
+    - repoURL: https://github.com/JimohAdebayo-DevOps/sre-self-healing-k8s.git
+      targetRevision: main
+      ref: values  # This creates the '$values' alias used above
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: n8n
+  syncPolicy:
+    # IMPORTANT: leave automation OFF for the very first sync
+    # to ensure it doesn't try to "re-install" over your live data.
+    syncOptions:
+      - CreateNamespace=true

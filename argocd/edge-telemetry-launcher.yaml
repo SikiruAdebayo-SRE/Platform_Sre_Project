@@ -1,19 +1,19 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: gridops-root-application
+  name: edge-telemetry-stack
   namespace: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "1"
+    argocd.argoproj.io/sync-wave: "2" # Deploys after Foundation and Storage
 spec:
   project: default
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: gridops-edge
   source:
     repoURL: 'https://github.com/SikiruAdebayo-SRE/Platform_Sre_Project.git'
     targetRevision: main
-    path: argocd # Points to the folder containing all other App Launchers
-  destination:
-    server: 'https://kubernetes.default.svc'
-    namespace: argocd
+    path: k8s/mqtt-broker # First, we deploy the MQTT broker directly from Git
   syncPolicy:
     automated:
       prune: true

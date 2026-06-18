@@ -1,0 +1,20 @@
+# Values for Bitnami InfluxDB Helm Chart
+architecture: standalone
+auth:
+  admin:
+    username: admin
+    # SRE Best Practice: Reference a pre-created secret, do not hardcode passwords
+    existingSecret: influxdb-admin-creds
+primary:
+  persistence:
+    enabled: true
+    # Use 'local-path' for the iximiuz lab. We will switch this to 'longhorn' for Proxmox.
+    storageClass: "local-path" 
+    size: 20Gi
+  resources:
+    limits:
+      memory: 2Gi
+      cpu: 1000m
+    requests:
+      memory: 1Gi
+      cpu: 500m

@@ -1,0 +1,72 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: monitoring-stack
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'https://prometheus-community.github.io/helm-charts'
+    targetRevision: 67.9.0
+    chart: kube-prometheus-stack
+    helm:
+      values: |
+        grafana:
+          additionalDataSources:
+            - name: Loki
+              type: loki
+              uid: loki
+              url: http://logging-stack-loki.logging.svc.cluster.local:3100
+              access: proxy
+              isDefault: false
+              jsonData:
+                derivedFields:
+                  - datasourceUid: tempo
+                    matcherRegex: "traceID=(\\w+)"
+                    name: TraceID
+                    url: "$${__value.raw}"
+          admin:
+            existingSecret: "grafana-admin-credentials"
+            userKey: admin-user
+            passwordKey: admin-password
+          ingress:
+            enabled: true
+            ingressClassName: nginx
+            annotations:
+              nginx.ingress.kubernetes.io/ssl-redirect: "false"
+              nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
+              nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+            hosts:
+              - grafana.sikiru.co.uk
+            path: /
+          grafana.ini:
+            server:
+              root_url: https://grafana.sikiru.co.uk
+              
+        # ==============================================================
+        # INDUSTRY-STANDARD SRE FIX
+        # ==============================================================
+        prometheusOperator:
+          admissionWebhooks:
+            enabled: false
+          extraEnvs:
+            - name: KUBERNETES_SERVICE_HOST
+              value: "192.168.0.150"
+            - name: KUBERNETES_SERVICE_PORT
+              value: "6443"
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - Replace=true
+  ignoreDifferences:
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+      jsonPointers:
+        - /metadata/annotations/kubectl.kubernetes.io~1last-applied-configuration

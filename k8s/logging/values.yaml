@@ -1,0 +1,10 @@
+loki:
+  isDefault: false
+promtail:
+  enabled: true
+  config:
+    lokiAddress: http://logging-stack-loki.logging.svc.cluster.local:3100/loki/api/v1/push
+grafana:
+  enabled: false # We already deployed Grafana in the monitoring-stack
+prometheus:
+  enabled: false # We already deployed Prometheus in the monitoring-stack

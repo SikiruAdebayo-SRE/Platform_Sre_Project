@@ -1,0 +1,18 @@
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: mqtt-zero-trust-ingress
+  namespace: gridops-edge
+spec:
+  description: "Strictly limit Mosquitto ingress to Telegraf collectors only"
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: mosquitto
+  ingress:
+  - fromEndpoints:
+    - matchLabels:
+        app.kubernetes.io/name: telegraf
+    toPorts:
+    - ports:
+      - port: "1883"
+        protocol: TCP

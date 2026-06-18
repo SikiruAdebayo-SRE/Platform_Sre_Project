@@ -1,0 +1,19 @@
+# Values for InfluxData Telegraf Helm Chart
+replicaCount: 1
+config:
+  agent:
+    interval: "1000ms" # 1-second sampling balances network load with resolution
+    flush_interval: "1s"
+    metric_batch_size: 10000 # Optimized for 10k+ points/sec batching
+  inputs:
+    - mqtt_consumer:
+        servers: ["tcp://mosquitto-service.gridops-edge.svc.cluster.local:1883"]
+        topics: ["gridops/site/+/+"]
+        qos: 1
+        data_format: "json"
+  outputs:
+    - influxdb_v2:
+        urls: ["http://influxdb.gridops-edge.svc.cluster.local:8086"]
+        token: "$INFLUX_TOKEN" # Injected securely via external secrets/Vault
+        organization: "GridOps"
+        bucket: "electrical_telemetry"
