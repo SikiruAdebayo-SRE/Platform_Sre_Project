@@ -14,7 +14,7 @@ spec:
       helm:
         valueFiles:
           # STRICT ROUTING: Argo CD will only pull the Azure-specific storage values
-          - $values/k8s/environments/azure/vault/values.yaml
+          - $values/k8s/vault/values.yaml
     - repoURL: 'https://github.com/SikiruAdebayo-SRE/Platform_Sre_Project.git'
       targetRevision: main
       ref: values
