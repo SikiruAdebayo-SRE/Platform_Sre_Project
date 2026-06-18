@@ -27,23 +27,35 @@ cat << 'EOF' | kubectl apply -f -
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
-  name: argocd-egress-external
+  name: argocd-internal-communication
   namespace: argocd
 spec:
-  description: "Allow Argo CD to fetch manifests from external Git providers"
-  endpointSelector:
-    matchLabels:
-      app.kubernetes.io/name: argocd-application-controller
+  description: "Allow Argo CD pod-to-pod, API Server, and DNS communication"
+  endpointSelector: {}
+  ingress:
+  - fromEndpoints:
+    - matchLabels:
+        "k8s:io.kubernetes.pod.namespace": "argocd"
   egress:
+  # 1. Unblocks Redis & Dex (Allows intra-namespace routing)
+  - toEndpoints:
+    - matchLabels:
+        "k8s:io.kubernetes.pod.namespace": "argocd"
+        
+  # 2. Unblocks the Kubernetes API Server (Fixes the 10.43.0.1 timeout)
   - toEntities:
-    - world
+    - kube-apiserver
+    - host
     toPorts:
     - ports:
       - port: "443"
         protocol: TCP
+        
+  # 3. Allows DNS Resolution (CoreDNS)
   - toEndpoints:
     - matchLabels:
-        "k8s:io.kubernetes.pod.namespace": kube-system
+        "k8s:io.kubernetes.pod.namespace": "kube-system"
+        "k8s:k8s-app": "kube-dns"
     toPorts:
     - ports:
       - port: "53"
@@ -54,30 +66,15 @@ spec:
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
-  name: argocd-internal-communication
+  name: argocd-egress-external
   namespace: argocd
 spec:
-  description: "Allow Argo CD component pod-to-pod communication"
+  description: "Allow Argo CD Controllers to fetch manifests from GitHub"
   endpointSelector:
     matchLabels:
-      app.kubernetes.io/part-of: argocd
-  ingress:
-  - fromEndpoints:
-    - matchLabels:
-        app.kubernetes.io/part-of: argocd
+      app.kubernetes.io/name: argocd-repo-server
   egress:
-  - toEndpoints:
-    - matchLabels:
-        app.kubernetes.io/part-of: argocd
-  - toEndpoints:
-    - matchLabels:
-        "k8s:io.kubernetes.pod.namespace": kube-system
-    toPorts:
-    - ports:
-      - port: "53"
-        protocol: UDP
-      - port: "53"
-        protocol: TCP
+  # ARCHITECTURAL FIX: 'world' entity required for internet egress in eBPF
   - toEntities:
     - world
     toPorts:
@@ -91,12 +88,16 @@ metadata:
   name: deny-default-argocd
   namespace: argocd
 spec:
-  description: "Default deny-all ingress (explicit allowlist required)"
+  description: "Default deny-all with Kubelet health probe exception"
   endpointSelector: {}
   ingress:
   - fromEndpoints:
     - matchLabels:
-        "k8s:io.kubernetes.pod.namespace": argocd
+        "k8s:io.kubernetes.pod.namespace": "argocd"
+  # SRE FIX: Allow Kubelet Liveness/Readiness Probes through the eBPF mesh
+  - fromEntities:
+    - host
+    - remote-node
 EOF
 
 echo "🌐 [PHASE 2.5] Provisioning Cilium Gateway API & HTTPRoute..."

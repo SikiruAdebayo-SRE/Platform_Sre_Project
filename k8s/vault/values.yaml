@@ -11,7 +11,7 @@ server:
   dataStorage:
     enabled: true
     size: 10Gi
-    storageClass: "longhorn"
+    storageClass: "local-path"
     accessMode: ReadWriteOnce
 
   # 3. RESOURCE LIMITS (Production Sizing)
