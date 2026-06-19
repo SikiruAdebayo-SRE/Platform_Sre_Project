@@ -109,15 +109,6 @@ resource "vault_kv_secret_v2" "sre_repo_creds" {
   })
 }
 
-# 11. GitOps Master Control Plane Password
-resource "vault_kv_secret_v2" "argocd_initial_admin" {
-  mount       = vault_mount.kvv2.path
-  name        = "argocd-initial-admin-secret"
-  data_json   = jsonencode({
-    "password" = var.argocd-initial-admin-secret-password
-  })
-}
-
 # Jenkins Docker Hub Credentials for Kaniko
 resource "vault_kv_secret_v2" "dockerhub_creds" {
   mount       = vault_mount.kvv2.path

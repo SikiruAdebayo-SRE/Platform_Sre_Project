@@ -1,0 +1,7 @@
+
+# Terraform Security Boundaries
+*.tfstate
+*.tfstate.backup
+*.tfvars
+.terraform/
+.terraform.lock.hcl

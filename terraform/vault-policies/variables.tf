@@ -7,7 +7,7 @@ variable "vault_token" {
 variable "vault_address" {
   description = "Public URL of the Vault server"
   type        = string
-  default     = "https://vault.sikiru.co.uk"
+  default     = "http://127.0.0.1:8200"
 }
 
 
@@ -32,12 +32,6 @@ variable "jenkins-github-creds" {
 
 variable "dockerhub-creds-password" {
   description = "The Docker Hub password/token for Kaniko image builds."
-  type        = string
-  sensitive   = true
-}
-
-variable "argocd-initial-admin-secret-password" {
-  description = "The master admin password for the ArgoCD control plane UI."
   type        = string
   sensitive   = true
 }
