@@ -9,7 +9,7 @@ global:
 primary:
   persistence:
     size: 10Gi
-    storageClass: longhorn
+    storageClass: local-path
 
   resources:
     limits:
