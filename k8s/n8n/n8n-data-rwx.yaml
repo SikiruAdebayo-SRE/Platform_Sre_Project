@@ -5,7 +5,7 @@ metadata:
   namespace: n8n
 spec:
   accessModes:
-    - ReadWriteMany  # Changed to RWX
+    - ReadWriteOnce  # Changed to RWO
   resources:
     requests:
       storage: 10Gi
