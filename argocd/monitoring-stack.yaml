@@ -30,7 +30,8 @@ spec:
             userKey: admin-user
             passwordKey: admin-password
           ingress:
-            enabled: false
+            # SRE FIX 1: Restored to 'true' to prevent external access termination
+            enabled: true
             ingressClassName: nginx
             annotations:
               nginx.ingress.kubernetes.io/ssl-redirect: "false"
@@ -42,12 +43,15 @@ spec:
           grafana.ini:
             server:
               root_url: https://grafana.sikiru.co.uk
-              
+
         # ==============================================================
         # INDUSTRY-STANDARD SRE FIX
         # ==============================================================
         prometheusOperator:
           admissionWebhooks:
+            enabled: false
+          # SRE FIX 2: Explicitly disable TLS to bypass the missing secret mount
+          tls:
             enabled: false
           extraEnvs:
             - name: KUBERNETES_SERVICE_HOST
