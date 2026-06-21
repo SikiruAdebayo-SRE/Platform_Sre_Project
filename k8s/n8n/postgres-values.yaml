@@ -38,13 +38,20 @@ primary:
         #!/bin/bash
         set -e
         echo "Executing Sovereign Database Initialization..."
-        
-        # psql will automatically use the $PGPASSWORD environment variable
+
+        # 1. Global Level: Create databases, the user, and assign DB ownership
         psql -v ON_ERROR_STOP=1 --username "postgres" --dbname "postgres" <<-EOSQL
             CREATE DATABASE keycloak;
             CREATE USER keycloak WITH PASSWORD '${KEYCLOAK_DB_PASSWORD}';
-            GRANT ALL PRIVILEGES ON DATABASE keycloak TO keycloak;
+            ALTER DATABASE keycloak OWNER TO keycloak;
             
             CREATE DATABASE gridops;
             CREATE DATABASE n8n;
+        EOSQL
+
+        # 2. Database Level: Enforce strict schema ownership for Keycloak
+        # Mathematically guarantees Keycloak has full authority over its schema
+        psql -v ON_ERROR_STOP=1 --username "postgres" --dbname "keycloak" <<-EOSQL
+            GRANT ALL ON SCHEMA public TO keycloak;
+            ALTER SCHEMA public OWNER TO keycloak;
         EOSQL
