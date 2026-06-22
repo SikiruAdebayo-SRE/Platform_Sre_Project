@@ -150,3 +150,11 @@ resource "vault_kv_secret_v2" "gridops_public_site" {
     "my_password" = var.gridops-public-site-my_password
   })
 }
+
+resource "vault_kv_secret_v2" "mosquitto_credentials" {
+  mount       = vault_mount.kvv2.path
+  name        = "mosquitto-auth-credentials"
+  data_json   = jsonencode({
+    "passwd" = var.mosquitto_auth_hash
+  })
+}

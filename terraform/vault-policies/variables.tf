@@ -143,3 +143,9 @@ variable "cloudflare-tunnel-token" {
   type        = string
   sensitive   = true
 }
+
+variable "mosquitto_auth_hash" {
+  description = "The PBKDF2 hashed password string for Mosquitto MQTT."
+  type        = string
+  sensitive   = true
+}
