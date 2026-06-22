@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  # This mathematically matches the claimName expected by your deployment
+  name: mosquitto-data-pvc
+  namespace: gridops-edge
+spec:
+  # Enforces the Principle of Least Privilege at the storage layer; 
+  # only a single node/pod can mount this telemetry queue at a time.
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: local-path

@@ -13,20 +13,53 @@ spec:
       labels:
         app.kubernetes.io/name: mosquitto
     spec:
+      # SRE FIX: Enforce the Principle of Least Privilege at the Pod layer
+      securityContext:
+        runAsUser: 1883
+        runAsGroup: 1883
+        # Mathematically ensures the projected Secret volume 
+        # is granted read permissions for the Mosquitto process group.
+        fsGroup: 1883
+        runAsNonRoot: true
+        
       containers:
       - name: mosquitto
         image: eclipse-mosquitto:2.0
         ports:
         - containerPort: 1883
+        securityContext:
+          allowPrivilegeEscalation: false
         volumeMounts:
         - name: config
           mountPath: /mosquitto/config/mosquitto.conf
           subPath: mosquitto.conf
           readOnly: true
+          
+        # THE CRITICAL SRE BRIDGE: Securely project the Vault credentials
+        - name: auth-volume
+          mountPath: /mosquitto/config/passwd
+          subPath: passwd
+          readOnly: true
+          
+        # Persistence for GridOps telemetry
+        - name: data-volume
+          mountPath: /mosquitto/data
+          
       volumes:
       - name: config
         configMap:
           name: mosquitto-config
+          
+      # Natively binds the ESO-generated Secret to the Pod
+      - name: auth-volume
+        secret:
+          secretName: mosquitto-auth-secret
+          
+      - name: data-volume
+        persistentVolumeClaim:
+          # Make sure you have a PVC named mosquitto-data-pvc defined in this namespace
+          claimName: mosquitto-data-pvc
+
 ---
 apiVersion: v1
 kind: Service
