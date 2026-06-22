@@ -29,7 +29,7 @@ extraEnvVars:
   - name: KC_PROXY_HEADERS
     value: "xforwarded"
   - name: KC_HOSTNAME_URL
-    value: "https://sso.sikiru.co.uk" 
+    value: "https://sso_iximiuz.sikiru.co.uk" 
   - name: KC_HTTP_RELATIVE_PATH
     value: "/"
 

@@ -1,0 +1,20 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: cilium-edge-gateway
+  # SRE Rule: The Gateway lives in a centralized/infrastructure namespace
+  namespace: default 
+spec:
+  # Mathematically binds this Gateway to the Cilium eBPF controller
+  gatewayClassName: cilium
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 80
+    # Principle of Least Privilege: Explicitly allow routes from the 'vault' namespace
+    allowedRoutes:
+      namespaces:
+        from: Selector
+        selector:
+          matchLabels:
+            kubernetes.io/metadata.name: vault
